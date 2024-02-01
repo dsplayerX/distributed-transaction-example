@@ -1,6 +1,7 @@
 import ballerina/http;
 import ballerina/sql;
 import ballerinax/mysql;
+import ballerina/log;
 
 public type Payment record {
     string cardno;
@@ -23,7 +24,7 @@ sql:ConnectionPool pool = {
     minIdleConnections: 0
 };
 
-service /payment on new http:Listener(9002) {
+service /payment on new http:Listener(9651) {
     final mysql:Client paymentDB;
     function init() returns error? {
         self.paymentDB = check new (host = paymentDBConfigs.hostname,
@@ -35,12 +36,13 @@ service /payment on new http:Listener(9002) {
             }
         );
     }
-
-    resource function post pay(Payment payment) returns boolean|error? {
+    
+    transactional resource function post pay(Payment payment) returns boolean|error? {
         sql:ParameterizedQuery updateQuery = `UPDATE Payments SET amount = amount + ${payment.amount} WHERE cardno = ${payment.cardno}`;
         sql:ExecutionResult|sql:Error updateResult = self.paymentDB->execute(updateQuery);
         if (updateResult is sql:ExecutionResult) {
             if (updateResult.affectedRowCount == 1) {
+                log:printInfo("Payment update successful");
                 return true;
             }
         }

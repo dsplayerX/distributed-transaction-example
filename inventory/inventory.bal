@@ -2,6 +2,7 @@ import ballerina/http;
 import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
+import ballerina/log;
 
 public type PurchaseRequest record {
     string cardno;
@@ -40,7 +41,7 @@ service /inventory on new http:Listener(9006) {
             options = {
                 useXADatasource: true
             }
-        );
+        );        
     }
 
     resource function get stock/[int itemId]() returns int|error? {
