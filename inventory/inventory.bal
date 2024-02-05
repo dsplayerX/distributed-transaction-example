@@ -1,13 +1,18 @@
 import ballerina/http;
+import ballerina/log;
 import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
-import ballerina/log;
 
-public type PurchaseRequest record {
+public type orderRequest record {
     string cardno;
     int itemId;
     int qty;
+};
+
+type inventoryDBRow record {
+    int amount;
+    int unitPrice;
 };
 
 public type DBConfigs record {
@@ -26,11 +31,7 @@ sql:ConnectionPool pool = {
     minIdleConnections: 0
 };
 
-type rowType record {
-    int amount;
-};
-
-service /inventory on new http:Listener(9006) {
+service /inventory on new http:Listener(9652) {
     final mysql:Client inventoryDB;
 
     function init() returns error? {
@@ -41,27 +42,37 @@ service /inventory on new http:Listener(9006) {
             options = {
                 useXADatasource: true
             }
-        );        
+        );
+        log:printInfo("Inventory service started!");
     }
 
-    resource function get stock/[int itemId]() returns int|error? {
-        sql:ParameterizedQuery selectQuery = `SELECT amount FROM Stock WHERE itemId = ${itemId}`;
-        int|sql:Error stock = self.inventoryDB->queryRow(selectQuery);
-        return stock;
-    }
-
-    transactional resource function post purchase(PurchaseRequest purchaseRequest) returns error? {
-        sql:ParameterizedQuery selectQuery = `SELECT unitPrice FROM Stock WHERE itemId = ${purchaseRequest.itemId}`;
-        int|sql:Error price = self.inventoryDB->queryRow(selectQuery);
-        if (price is sql:Error) {
+    transactional resource function post getTotalPrice(orderRequest orderRequest) returns int|error? {
+        // check if the item quantity is available
+        sql:ParameterizedQuery selectQuery = `SELECT * FROM Stock WHERE itemId = ${orderRequest.itemId}`;
+        inventoryDBRow|sql:Error result = self.inventoryDB->queryRow(selectQuery);
+        if (result is sql:Error) {
+            log:printError("Error while querying stock: ", result);
+            // most probably the item is not found
             return error("Item not found!");
         }
-        // int totalPrice = price * purchaseRequest.qty;
-        sql:ParameterizedQuery updateQuery = `UPDATE Stock SET amount = amount - ${purchaseRequest.qty} WHERE itemId = ${purchaseRequest.itemId}`;
+        if (result.amount < orderRequest.qty) {
+            log:printInfo("Insufficient stock! Available stock: " + result.amount.toString());
+            return error("Insufficient stock!");
+        }
+        // get the total price
+        int totalPrice = result.unitPrice * orderRequest.qty;
+        log:printInfo(totalPrice.toString());
+        return totalPrice;
+    }
+
+    transactional resource function post updateStock(orderRequest orderRequest) returns error? {
+        log:printInfo(string`Updating stock: Item: ${orderRequest.itemId} | Qty: -${orderRequest.qty}`);
+        sql:ParameterizedQuery updateQuery = `UPDATE Stock SET amount = amount - ${orderRequest.qty} WHERE itemId = ${orderRequest.itemId}`;
         sql:ExecutionResult|sql:Error updateResult = self.inventoryDB->execute(updateQuery);
         if (updateResult is sql:Error) {
+            log:printError("Error while updating stock: ", updateResult);
             return error("Error while updating stock: ", updateResult);
         }
-        return;
+        log:printInfo("Stock update successfull!");
     }
 }

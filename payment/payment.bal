@@ -1,10 +1,14 @@
 import ballerina/http;
+import ballerina/log;
 import ballerina/sql;
 import ballerinax/mysql;
-import ballerina/log;
 
 public type Payment record {
     string cardno;
+    int amount;
+};
+
+type paymentDBRow record {
     int amount;
 };
 
@@ -35,17 +39,33 @@ service /payment on new http:Listener(9651) {
                 useXADatasource: true
             }
         );
+        log:printInfo("Payment service started!");
     }
-    
-    transactional resource function post pay(Payment payment) returns boolean|error? {
-        sql:ParameterizedQuery updateQuery = `UPDATE Payments SET amount = amount + ${payment.amount} WHERE cardno = ${payment.cardno}`;
+
+    transactional resource function post pay(Payment payment) returns error? {
+        // see if card exists and has enough balance
+        log:printInfo(string `Card no: ${payment.cardno} amount: ${payment.amount}`);
+        sql:ParameterizedQuery selectQuery = `SELECT amount FROM Payments WHERE cardno = ${payment.cardno}`;
+        paymentDBRow|sql:Error selectResult = self.paymentDB->queryRow(selectQuery);
+        if (selectResult is sql:Error) {
+            return error("Card not found!");
+        }
+        log:printInfo(string `Balance: ${selectResult.amount}`);
+        if (selectResult.amount < payment.amount) {
+            log:printInfo(string `Insufficient balance! Available balance: ${selectResult.amount} requested: ${payment.amount}`);
+            return error("Insufficient balance!");
+        }
+
+        // do the payment
+        sql:ParameterizedQuery updateQuery = `UPDATE Payments SET amount = amount - ${payment.amount} WHERE cardno = ${payment.cardno}`;
         sql:ExecutionResult|sql:Error updateResult = self.paymentDB->execute(updateQuery);
         if (updateResult is sql:ExecutionResult) {
             if (updateResult.affectedRowCount == 1) {
-                log:printInfo("Payment update successful");
-                return true;
+                log:printInfo("Payment update successful!");
+                return;
             }
         }
-        return false;
+        log:printInfo("Payment update failed!");
+        return error("Payment update failed!");
     }
 }
