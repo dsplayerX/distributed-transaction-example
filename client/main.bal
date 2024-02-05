@@ -23,13 +23,16 @@ service / on new http:Listener(9650) {
     }
 
     resource function post placeOrder(OrderRequest orderRequest) returns string|error? {
+        // log:printInfo(string`Is within transaction: ${transactional}`);
         log:printInfo("Transaction start!");
-        transaction {
+        retry transaction {
             transaction:onCommit(commitHanlder);
             transaction:onRollback(rollbackHandler);
+            // log:printInfo(string`Is within transaction: ${transactional}`);
 
             check makePayment(orderRequest);
             check updateInventory(orderRequest);
+
             check commit;
         }
         log:printInfo("Transaction end!");
@@ -69,9 +72,12 @@ transactional function getTotalPrice(OrderRequest orderRequest) returns int|erro
 }
 
 isolated function commitHanlder('transaction:Info info) {
+    // send a message/email
+    log:printDebug("EMAIL SENT!");
+
     log:printInfo("Commit Handler: Transaction committed!");
 }
 
-isolated function rollbackHandler(transaction:Info info, error? cause, boolean willRetry = false) {
+isolated function rollbackHandler(transaction:Info info, error? cause, boolean willRetry = true) {
     log:printInfo("Rollback Handler: Transaction rolled back!");
 }
