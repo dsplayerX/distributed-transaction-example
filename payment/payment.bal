@@ -3,10 +3,10 @@ import ballerina/log;
 import ballerina/sql;
 import ballerinax/mysql;
 
-public type Payment record {
+public type Payment record {|
     string cardno;
     int amount;
-};
+|};
 
 type paymentDBRow record {
     int amount;

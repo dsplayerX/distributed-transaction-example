@@ -4,7 +4,7 @@ import ballerina/sql;
 import ballerinax/mysql;
 import ballerinax/mysql.driver as _;
 
-public type orderRequest record {
+public type orderRequest record {|
     string cardno;
     int itemId;
     int qty;

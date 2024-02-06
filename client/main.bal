@@ -1,16 +1,16 @@
 import ballerina/http;
 import ballerina/log;
 
-public type Payment record {
+public type Payment record {|
     string cardno;
     int amount;
-};
+|};
 
-public type OrderRequest record {
+public type OrderRequest record {|
     string cardno;
     int itemId;
     int qty;
-};
+|};
 
 final http:Client paymentClient;
 final http:Client inventoryClient;
@@ -25,7 +25,7 @@ service / on new http:Listener(9650) {
     resource function post placeOrder(OrderRequest orderRequest) returns string|error? {
         // log:printInfo(string`Is within transaction: ${transactional}`);
         log:printInfo("Transaction start!");
-        retry transaction {
+        transaction {
             transaction:onCommit(commitHanlder);
             transaction:onRollback(rollbackHandler);
             // log:printInfo(string`Is within transaction: ${transactional}`);
@@ -66,9 +66,8 @@ transactional function getTotalPrice(OrderRequest orderRequest) returns int|erro
     if (response is int) {
         log:printInfo(string `Total price: ${response}`);
         return response;
-    } else {
-        return error("Item not found or insufficient quantity available.");
     }
+    return error("Item not found or insufficient quantity available.");
 }
 
 isolated function commitHanlder('transaction:Info info) {
