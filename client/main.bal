@@ -22,9 +22,6 @@ service / on new http:Listener(9650) {
 
     resource function post placeOrder(OrderRequest orderRequest) returns string|error? {
         // log:printInfo(string`Is within transaction: ${transactional}`);
-        if  !orderRequest.cardNo.matches(re `^card\d+$`) {
-            return error("Invalid card number!");
-        }
         if orderRequest.qty <= 0 {
             return error("Invalid Order Request!");
         }
