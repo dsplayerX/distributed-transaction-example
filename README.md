@@ -14,7 +14,7 @@
 
 # Sequence Diagram
 
-```mermaid.js
+```mermaid
 sequenceDiagram
     participant OrderService
     participant Coordinator
