@@ -3,7 +3,6 @@
 # Tech Stack
 1. Ballerina
 2. MySQL Database
-3. RabbitMQ
 
 # Usage
 
