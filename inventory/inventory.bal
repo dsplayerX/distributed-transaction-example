@@ -27,7 +27,7 @@ configurable DBConfigs inventoryDBConfigs = ?;
 
 sql:ConnectionPool pool = {
     maxOpenConnections: 5,
-    maxConnectionLifeTime: 300,
+    maxConnectionLifeTime: 60,
     minIdleConnections: 0
 };
 

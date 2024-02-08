@@ -24,7 +24,7 @@ configurable DBConfigs paymentDBConfigs = ?;
 
 sql:ConnectionPool pool = {
     maxOpenConnections: 5,
-    maxConnectionLifeTime: 300,
+    maxConnectionLifeTime: 60,
     minIdleConnections: 0
 };
 
@@ -42,7 +42,7 @@ service /payment on new http:Listener(9651) {
         log:printInfo("Payment service started!");
     }
 
-    transactional resource function post pay(Payment payment) returns error? {
+    resource function post pay(Payment payment) returns error? {
         // see if card exists and has enough balance
         log:printInfo(string `Card no: ${payment.cardNo} amount: ${payment.amount}`);
         sql:ParameterizedQuery selectQuery = `SELECT amount FROM Payments WHERE cardNo = ${payment.cardNo}`;
