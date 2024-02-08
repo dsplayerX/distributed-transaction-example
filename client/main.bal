@@ -43,6 +43,8 @@ service / on new http:Listener(9650) {
 }
 
 transactional function makePayment(OrderRequest orderRequest) returns error? {
+    transaction:onRollback(isolated function(transaction:Info info, error? cause, boolean willRetry) =>
+                                log:printDebug("Transaction rolled back at: makePayment!"));
     int totalPrice = check getTotalPrice(orderRequest) ?: 0;
     if totalPrice == 0 {
         return error("Item not found or insufficient quantity available.");
@@ -56,6 +58,8 @@ transactional function makePayment(OrderRequest orderRequest) returns error? {
 }
 
 transactional function updateInventory(OrderRequest orderRequest) returns error? {
+    transaction:onRollback(isolated function(transaction:Info info, error? cause, boolean willRetry) =>
+                                log:printDebug("Transaction rolled back at: updateInventory!"));
     json|error? response = inventoryClient->post("/inventory/updateStock", orderRequest);
     if response is error {
         return error("Inventory update failed!");
@@ -64,6 +68,8 @@ transactional function updateInventory(OrderRequest orderRequest) returns error?
 }
 
 transactional function getTotalPrice(OrderRequest orderRequest) returns int|error? {
+    transaction:onRollback(isolated function(transaction:Info info, error? cause, boolean willRetry) =>
+                                log:printDebug("Transaction rolled back at: getTotalPrice!"));
     int|error? response = inventoryClient->post("/inventory/getTotalPrice", orderRequest);
     if response is int {
         log:printInfo(string `Total price: ${response}`);
@@ -73,10 +79,10 @@ transactional function getTotalPrice(OrderRequest orderRequest) returns int|erro
 }
 
 isolated function commitHanlder('transaction:Info info) {
+    log:printDebug("Commit Handler: Decision Commit!");
     // send a message/email
     // log:printInfo(transactional.toString());
     log:printInfo("Send Email!");
-    log:printDebug("Commit Handler: Decision Commit!");
 }
 
 isolated function rollbackHandler(transaction:Info info, error? cause, boolean willRetry = true) {
