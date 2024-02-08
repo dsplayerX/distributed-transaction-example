@@ -7,10 +7,50 @@
 # Usage
 
 1. Create necessary databases, tables and add configurations in Config.toml files.
-2. Run all three services.
-3. Send a post request to `placeOrder` endpoint with a `OrderRequest`.
+    - Run 2 database (MySQL) instances on separate docker containers.
 
-// TODO: write more descriptively
+        ```
+        docker run -e MYSQL_ROOT_PASSWORD=<password> -p <PORT>:3306 -d mysql
+        ```
+    - Create `Stock` table.
+        ```
+        CREATE TABLE IF NOT EXISTS Stock (
+            itemId INT PRIMARY KEY,
+            amount INT,
+            unitPrice INT
+        );
+        ```
+    - Create `Payments` table.
+        ```
+        CREATE TABLE IF NOT EXISTS Payments (
+            `cardno` VARCHAR(16) NOT NULL PRIMARY KEY,
+            `amount` INT NOT NULL
+        );
+        ```
+    <details> 
+    <summary>Populate both tables with dummy data.</summary>
+    
+    ```
+    INSERT INTO `Stock`
+        (`itemId`, `amount`, `unitPrice`)
+        VALUES
+        (1, 100, 20),
+        (2, 150, 25),
+        (3, 200, 18),
+        (4, 10, 60);
+    ```
+    ```
+    INSERT INTO `Payments`
+        (`cardno`, `amount`)
+        VALUES
+        ('card1', 1000),
+        ('card2', 2000),
+        ('card3', 5000);
+    ```
+    </details>
+
+2. Run all three services with `bal run`.
+3. Try it out by sending a post request to `placeOrder` endpoint on port `9650` with a `OrderRequest`.
 
 # Sequence Diagram
 
@@ -34,7 +74,7 @@ sequenceDiagram
     PaymentService-->>Coordinator: Payment Response
     InventoryService-->>Coordinator: Inventory Update Response
     
-    rect rgb(86, 86, 86)
+    rect rgba(138,138,138,255)
         Coordinator->>PaymentService: Prepare
         Coordinator->>InventoryService: Prepare
             PaymentService->>Coordinator: Prepared
