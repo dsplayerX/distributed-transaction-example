@@ -34,7 +34,7 @@ sequenceDiagram
     PaymentService-->>Coordinator: Payment Response
     InventoryService-->>Coordinator: Inventory Update Response
     
-    rect rgb(255,255, 255)
+    rect rgb(86, 86, 86)
         Coordinator->>PaymentService: Prepare
         Coordinator->>InventoryService: Prepare
             PaymentService->>Coordinator: Prepared
