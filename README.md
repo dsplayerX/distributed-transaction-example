@@ -1,58 +1,81 @@
-# distributed-transaction-example
+# Distributed Transactions in Ballerina
 
-# Tech Stack
-1. Ballerina
-2. MySQL Databases
+This repository contains a distributed transaction example implemented using Ballerina, showcasing how to coordinate transactions across multiple microservices. The example implementation is a simple e-commerce platform that handles inventory updates, payment processing, and user notifications.
 
-# Usage
+## How It Works
+1. Place Order: When an order is placed through the order service, it initiates a transaction.
+2. Transaction Coordination: Within the transaction, the order service interacts with the payment service and the inventory service.
+3. Payment Verification: The order service verifies the payment by calling the payment service.
+4. Inventory Update: Simultaneously, it updates the inventory by calling the inventory service.
+5. Commit/Rollback: If all operations are successful, the transaction commits, ensuring the order is completed. Otherwise, it rolls back, ensuring data consistency.
 
-1. Create necessary databases, tables and add configurations in Config.toml files.
-    - Run 2 database (MySQL) instances on separate docker containers.
+## Services
 
-        ```
-        docker run -e MYSQL_ROOT_PASSWORD=<password> -p <PORT>:3306 -d mysql
-        ```
-    - Create `Stock` table.
-        ```
-        CREATE TABLE IF NOT EXISTS Stock (
-            itemId INT PRIMARY KEY,
-            amount INT,
-            unitPrice INT
-        );
-        ```
-    - Create `Payments` table.
-        ```
-        CREATE TABLE IF NOT EXISTS Payments (
-            `cardno` VARCHAR(16) NOT NULL PRIMARY KEY,
-            `amount` INT NOT NULL
-        );
-        ```
-    <details> 
-    <summary>Populate both tables with dummy data.</summary>
-    
+| Service            | Service Path | Port | Description                                                                                            |
+|--------------------|--------------|------|--------------------------------------------------------------------------------------------------------|
+| Order Service      | `/`          | 9650 | Manages order placement and coordinates with the payment and inventory services for order completion. |
+| Payment Service    | `/payment`   | 9651 | Handles payment transactions and interacts with a MySQL database for payment validation and updates.  |
+| Inventory Service  | `/inventory` | 9652 | Manages inventory, ensures item availability, and updates inventory status after order placement.   |
+
+## Usage
+
+### Pre-requisists 
+Create necessary databases, tables and add configurations in Config.toml files.
+
+- Run 2 database (MySQL) instances on separate docker containers.
+
     ```
-    INSERT INTO `Stock`
-        (`itemId`, `amount`, `unitPrice`)
-        VALUES
-        (1, 100, 20),
-        (2, 150, 25),
-        (3, 200, 18),
-        (4, 10, 60);
+    docker run -e MYSQL_ROOT_PASSWORD=<password> -p <PORT>:3306 -d mysql
     ```
+- Create `Stock` table.
     ```
-    INSERT INTO `Payments`
-        (`cardno`, `amount`)
-        VALUES
-        ('card1', 1000),
-        ('card2', 2000),
-        ('card3', 5000);
+    CREATE TABLE IF NOT EXISTS Stock (
+        itemId INT PRIMARY KEY,
+        amount INT,
+        unitPrice INT
+    );
     ```
-    </details>
+- Create `Payments` table.
+    ```
+    CREATE TABLE IF NOT EXISTS Payments (
+        `cardno` VARCHAR(16) NOT NULL PRIMARY KEY,
+        `amount` INT NOT NULL
+    );
+    ```
+<details> 
+<summary>Populate both tables with dummy data.</summary>
 
-2. Run all three services with `bal run`.
-3. Try it out by sending a post request to `placeOrder` endpoint on port `9650` with a `OrderRequest`.
+```
+INSERT INTO `Stock`
+    (`itemId`, `amount`, `unitPrice`)
+    VALUES
+    (1, 100, 20),
+    (2, 150, 25),
+    (3, 200, 18),
+    (4, 10, 60);
+```
+```
+INSERT INTO `Payments`
+    (`cardno`, `amount`)
+    VALUES
+    ('card1', 1000),
+    ('card2', 2000),
+    ('card3', 5000);
+```
+</details>
 
-# Sequence Diagram
+### Running the Example
+1. Run the payment, inventory and order services using `bal run` command.
+2. Try it out by sending a post request to `placeOrder` endpoint on port `9650` with a `OrderRequest`
+       (```
+       {
+           cardNo='',
+           itemId='',
+           qty=''
+       }
+       ```).
+
+## Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -94,3 +117,8 @@ sequenceDiagram
     Coordinator->>OrderService: End Transaction
     
 ```
+
+## Tech Stack
+1. Ballerina
+2. MySQL Databases
+
